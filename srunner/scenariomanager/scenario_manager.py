@@ -132,6 +132,29 @@ class ScenarioManager(object):
             if timestamp:
                 self._tick_scenario(timestamp)
 
+        temp = ""
+        # Initialise Output file
+        startTime = datetime.now().strftime("%Y_%m_%d_(%H:%M:%S)")
+        outputFileName = "./output/"
+        outputFileName += startTime
+
+        print(len(self.scenario_class.config_file))
+        record = False
+        for charItr in range(len(self.scenario_class.config_file)-1,0,-1):
+            if (self.scenario_class.config_file[charItr] == "/" or self.scenario_class.config_file[charItr] == "\\"):
+                break
+            if (record == True):
+                temp += self.scenario_class.config_file[charItr]
+            if (self.scenario_class.config_file[charItr] == "."):
+                record = True
+            
+            
+        outputFileName += temp[::-1] + ".txt"
+            
+        outputFile = open(outputFileName, "w")
+
+        outputFile.write("TEST")
+
         self._watchdog.stop()
 
         self.cleanup()

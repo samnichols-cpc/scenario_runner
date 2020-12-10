@@ -51,7 +51,7 @@ class OpenScenarioConfiguration(ScenarioConfiguration):
         self.init = self.storyboard.find("Init")
 
         logging.basicConfig()
-        self.logger = logging.getLogger("[SR:OpenScenarioConfiguration]")
+        self.logger = logging.getLogger()
 
         self._global_parameters = {}
 

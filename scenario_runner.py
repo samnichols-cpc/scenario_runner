@@ -501,7 +501,7 @@ class ScenarioRunner(object):
         return result
 
 
-def main():
+def main(strArguments):
     """
     main function
     """
@@ -554,7 +554,7 @@ def main():
     parser.add_argument('--repetitions', default=1, type=int, help='Number of scenario executions')
     parser.add_argument('--waitForEgo', action="store_true", help='Connect the scenario to an existing ego vehicle')
 
-    arguments = parser.parse_args()
+    arguments = parser.parse_args(strArguments)
     # pylint: enable=line-too-long
 
     if arguments.list:
