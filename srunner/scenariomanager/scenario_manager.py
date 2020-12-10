@@ -21,7 +21,7 @@ from srunner.scenariomanager.carla_data_provider import CarlaDataProvider
 from srunner.scenariomanager.result_writer import ResultOutputProvider
 from srunner.scenariomanager.timer import GameTime
 from srunner.scenariomanager.watchdog import Watchdog
-
+from datetime import datetime
 
 class ScenarioManager(object):
 
@@ -51,6 +51,8 @@ class ScenarioManager(object):
         self.scenario_class = None
         self.ego_vehicles = None
         self.other_actors = None
+
+        self.ground_truth_series = []
 
         self._debug_mode = debug_mode
         self._agent = None
@@ -123,12 +125,16 @@ class ScenarioManager(object):
         self._running = True
 
         while self._running:
+            temp = []
             timestamp = None
             world = CarlaDataProvider.get_world()
             if world:
                 snapshot = world.get_snapshot()
                 if snapshot:
                     timestamp = snapshot.timestamp
+                    for actor_snapshot in snapshot: #Get the actor and the snapshot information
+                        temp.append(actor_snapshot.get_transform())
+                        self.ground_truth_series.append(temp)
             if timestamp:
                 self._tick_scenario(timestamp)
 
@@ -153,7 +159,14 @@ class ScenarioManager(object):
             
         outputFile = open(outputFileName, "w")
 
-        outputFile.write("TEST")
+        timestepCounter = 0
+        for timestep in self.ground_truth_series:
+            timestepCounter += 1
+            outputFile.write("---------------------{0}---------------------\n".format(timestepCounter))
+            actorCounter = 0
+            for actor in timestep:
+                actorCounter += 1
+                outputFile.write("Actor {0} : position X: {1}, position Y: {2}, position Z: {3}\n".format(actorCounter,actor.location.x,actor.location.y,actor.location.z))
 
         self._watchdog.stop()
 
