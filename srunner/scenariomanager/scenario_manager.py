@@ -41,7 +41,7 @@ class ScenarioManager(object):
     5. If needed, cleanup with manager.stop_scenario()
     """
 
-    def __init__(self, debug_mode=False, sync_mode=False, timeout=2.0):
+    def __init__(self, musiccScenario, queryString, queryURL, downloadID, certiCAVCommit, organisation, debug_mode=False, sync_mode=False, timeout=2.0):
         """
         Setups up the parameters, which will be filled at load_scenario()
 
@@ -66,6 +66,13 @@ class ScenarioManager(object):
         self.scenario_duration_game = 0.0
         self.start_system_time = None
         self.end_system_time = None
+
+        self.musiccScenario = musiccScenario
+        self.queryString = queryString
+        self.queryURL = queryURL
+        self.downlaodID = downloadID
+        self.certiCAVCommit = certiCAVCommit
+        self.organisation = organisation
 
     def _reset(self):
         """
@@ -136,7 +143,11 @@ class ScenarioManager(object):
                         temp.append(actor_snapshot.get_transform())
                         self.ground_truth_series.append(temp)
             if timestamp:
-                self._tick_scenario(timestamp)
+                try:
+                    self._tick_scenario(timestamp)
+                except:
+                    print("Warning : Failed to tick scenario")
+                    break
 
         temp = ""
         # Initialise Output file
@@ -144,7 +155,6 @@ class ScenarioManager(object):
         outputFileName = "./output/"
         outputFileName += startTime
 
-        print(len(self.scenario_class.config_file))
         record = False
         for charItr in range(len(self.scenario_class.config_file)-1,0,-1):
             if (self.scenario_class.config_file[charItr] == "/" or self.scenario_class.config_file[charItr] == "\\"):
@@ -158,6 +168,16 @@ class ScenarioManager(object):
         outputFileName += temp[::-1] + ".txt"
             
         outputFile = open(outputFileName, "w")
+
+        outputFile.write("---------------------HEADER---------------------\n")
+        outputFile.write("Musicc Scenario label : {0}\n".format(self.musiccScenario['metadata']["label"]) + 
+        "Musicc Scenario Description : {0}\n".format(self.musiccScenario['metadata']["Description"]) + 
+        "Query String : {0}\n".format(self.queryString) + 
+        "Query URL : {0}\n".format(self.queryURL) + 
+        "Musicc Download ID : {0}\n".format(self.downlaodID) + 
+        "CertiCAV Commit : {0}\n".format(self.certiCAVCommit) + 
+        "Carla Version : {0}\n".format(CarlaDataProvider.get_client().get_client_version()) + 
+        "Organisation : {0}\n".format(self.organisation))
 
         timestepCounter = 0
         for timestep in self.ground_truth_series:

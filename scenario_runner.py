@@ -72,12 +72,18 @@ class ScenarioRunner(object):
     agent_instance = None
     module_agent = None
 
-    def __init__(self, args):
+    def __init__(self, args, musiccScenario, queryString, queryURL, downloadID, certiCAVCommit, organisation):
         """
         Setup CARLA client and world
         Setup ScenarioManager
         """
         self._args = args
+        self.musiccScenario = musiccScenario
+        self.queryString = queryString
+        self.queryURL = queryURL
+        self.downloadID = downloadID
+        self.certiCAVCommit = certiCAVCommit
+        self.organisation = organisation
 
         if args.timeout:
             self.client_timeout = float(args.timeout)
@@ -102,7 +108,7 @@ class ScenarioRunner(object):
             self.module_agent = importlib.import_module(module_name)
 
         # Create the ScenarioManager
-        self.manager = ScenarioManager(self._args.debug, self._args.sync, self._args.timeout)
+        self.manager = ScenarioManager(self.musiccScenario, self.queryString, self.queryURL, self.downloadID, self.certiCAVCommit, self.organisation, self._args.debug, self._args.sync, self._args.timeout)
 
         # Create signal handler for SIGINT
         self._shutdown_requested = False
@@ -501,7 +507,7 @@ class ScenarioRunner(object):
         return result
 
 
-def main(strArguments):
+def main(strArguments, musiccScenario, queryString, queryURL, downloadID, certiCAVCommit, organisation):
     """
     main function
     """
@@ -586,7 +592,7 @@ def main(strArguments):
     scenario_runner = None
     result = True
     try:
-        scenario_runner = ScenarioRunner(arguments)
+        scenario_runner = ScenarioRunner(arguments, musiccScenario, queryString, queryURL, downloadID, certiCAVCommit, organisation)
         result = scenario_runner.run()
 
     finally:
