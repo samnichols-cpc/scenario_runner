@@ -22,6 +22,10 @@ from srunner.scenariomanager.result_writer import ResultOutputProvider
 from srunner.scenariomanager.timer import GameTime
 from srunner.scenariomanager.watchdog import Watchdog
 from datetime import datetime
+import mss
+import cv2
+import numpy as np
+
 
 class ScenarioManager(object):
 
@@ -41,7 +45,7 @@ class ScenarioManager(object):
     5. If needed, cleanup with manager.stop_scenario()
     """
 
-    def __init__(self, musiccScenario, queryString, queryURL, downloadID, certiCAVCommit, organisation, debug_mode=False, sync_mode=False, timeout=2.0):
+    def __init__(self, musiccScenario, queryString, queryURL, downloadID, certiCAVCommit, organisation, outputFileName, debug_mode=False, sync_mode=False, timeout=2.0):
         """
         Setups up the parameters, which will be filled at load_scenario()
 
@@ -73,6 +77,7 @@ class ScenarioManager(object):
         self.downlaodID = downloadID
         self.certiCAVCommit = certiCAVCommit
         self.organisation = organisation
+        self.outputFileName = outputFileName
 
     def _reset(self):
         """
@@ -130,7 +135,11 @@ class ScenarioManager(object):
 
         self._watchdog.start()
         self._running = True
-
+        fourcc = cv2.VideoWriter_fourcc(*'XVID')
+        out = cv2.VideoWriter((self.outputFileName +".avi"), fourcc, 20, 
+                            (2560, 1440))
+        monitor = {"top": 0, "left": 0, "width": 2560, "height": 1440}
+        count = 0
         while self._running:
             temp = []
             timestamp = None
@@ -144,30 +153,25 @@ class ScenarioManager(object):
                         self.ground_truth_series.append(temp)
             if timestamp:
                 try:
+                    #take screenshot at each step and store for later writing
+                    with mss.mss() as sct:
+                        screenshot = np.array(sct.grab(monitor))
+                    screenshot = cv2.resize(screenshot, (2560, 1440))
+                    screenshot = cv2.cvtColor(screenshot, cv2.COLOR_RGB2BGR)
+                    screenshot = cv2.cvtColor(screenshot, cv2.COLOR_BGR2RGB)
+                    out.write(screenshot)
+
                     self._tick_scenario(timestamp)
+                    count += 1
                 except:
                     print("Warning : Failed to tick scenario")
                     break
+        
+        out.release()
 
-        temp = ""
-        # Initialise Output file
-        startTime = datetime.now().strftime("%Y_%m_%d_(%H:%M:%S)")
-        outputFileName = "./output/"
-        outputFileName += startTime
-
-        record = False
-        for charItr in range(len(self.scenario_class.config_file)-1,0,-1):
-            if (self.scenario_class.config_file[charItr] == "/" or self.scenario_class.config_file[charItr] == "\\"):
-                break
-            if (record == True):
-                temp += self.scenario_class.config_file[charItr]
-            if (self.scenario_class.config_file[charItr] == "."):
-                record = True
+        self.outputFileName += ".txt"
             
-            
-        outputFileName += temp[::-1] + ".txt"
-            
-        outputFile = open(outputFileName, "w")
+        outputFile = open(self.outputFileName, "w")
 
         outputFile.write("---------------------HEADER---------------------\n")
         outputFile.write("Musicc Scenario label : {0}\n".format(self.musiccScenario['metadata']["label"]) + 
