@@ -150,7 +150,7 @@ class ScenarioManager(object):
                     timestamp = snapshot.timestamp
                     for actor_snapshot in snapshot: #Get the actor and the snapshot information
                         temp.append(actor_snapshot.get_transform())
-                        self.ground_truth_series.append(temp)
+                    self.ground_truth_series.append(temp)
             if timestamp:
                 try:
                     #take screenshot at each step and store for later writing
