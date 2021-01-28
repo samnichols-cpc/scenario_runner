@@ -13,9 +13,8 @@ It must not be modified and is for reference only!
 from __future__ import print_function
 import sys
 import time
-
+import pathlib
 import py_trees
-
 from srunner.autoagents.agent_wrapper import AgentWrapper
 from srunner.scenariomanager.carla_data_provider import CarlaDataProvider
 from srunner.scenariomanager.result_writer import ResultOutputProvider
@@ -25,6 +24,11 @@ from datetime import datetime
 import mss
 import cv2
 import numpy as np
+
+sys.path.append(str(pathlib.Path(__file__).parent.parent.parent.parent.absolute()) + "/pyproto")
+
+from pyproto import certitrace_pb2
+from pyproto import osi_groundtruth_pb2
 
 
 class ScenarioManager(object):
@@ -55,8 +59,7 @@ class ScenarioManager(object):
         self.scenario_class = None
         self.ego_vehicles = None
         self.other_actors = None
-
-        self.ground_truth_series = []
+        self.certiTrace = certitrace_pb2.SimulationRecords()
 
         self._debug_mode = debug_mode
         self._agent = None
@@ -140,17 +143,32 @@ class ScenarioManager(object):
                             (2560, 1440))
         monitor = {"top": 0, "left": 0, "width": 2560, "height": 1440}
         count = 0
+
+        self.certiTrace.staticSimulationInformation
         while self._running:
-            temp = []
             timestamp = None
             world = CarlaDataProvider.get_world()
             if world:
                 snapshot = world.get_snapshot()
                 if snapshot:
                     timestamp = snapshot.timestamp
+                    groundTruth = self.certiTrace.groundTruthSeries.add()
                     for actor_snapshot in snapshot: #Get the actor and the snapshot information
-                        temp.append(actor_snapshot.get_transform())
-                    self.ground_truth_series.append(temp)
+                        new_actor = groundTruth.moving_object.add()
+                        new_actor.base.position.x = actor_snapshot.get_transform().location.x
+                        new_actor.base.position.y = actor_snapshot.get_transform().location.y
+                        new_actor.base.position.z = actor_snapshot.get_transform().location.z
+                        new_actor.base.orientation.roll = actor_snapshot.get_transform().rotation.roll
+                        new_actor.base.orientation.pitch = actor_snapshot.get_transform().rotation.pitch
+                        new_actor.base.orientation.yaw = actor_snapshot.get_transform().rotation.yaw
+                        new_actor.base.velocity.x = actor_snapshot.get_velocity().x
+                        new_actor.base.velocity.y = actor_snapshot.get_velocity().y
+                        new_actor.base.velocity.z = actor_snapshot.get_velocity().z
+                        new_actor.base.acceleration.x = actor_snapshot.get_acceleration().x
+                        new_actor.base.acceleration.y = actor_snapshot.get_acceleration().y
+                        new_actor.base.acceleration.z = actor_snapshot.get_acceleration().z
+                    print(groundTruth)
+                    print("-----------------------------")
             if timestamp:
                 try:
                     #take screenshot at each step and store for later writing
@@ -183,6 +201,7 @@ class ScenarioManager(object):
         "Carla Version : {0}\n".format(CarlaDataProvider.get_client().get_client_version()) + 
         "Organisation : {0}\n".format(self.organisation))
 
+        
         timestepCounter = 0
         for timestep in self.ground_truth_series:
             timestepCounter += 1
