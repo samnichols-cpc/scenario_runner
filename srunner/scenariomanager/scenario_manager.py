@@ -77,7 +77,7 @@ class ScenarioManager(object):
         self.musiccScenario = musiccScenario
         self.queryString = queryString
         self.queryURL = queryURL
-        self.downlaodID = downloadID
+        self.downloadID = downloadID
         self.certiCAVCommit = certiCAVCommit
         self.organisation = organisation
         self.outputFileName = outputFileName
@@ -144,7 +144,6 @@ class ScenarioManager(object):
         monitor = {"top": 0, "left": 0, "width": 2560, "height": 1440}
         count = 0
 
-        self.certiTrace.staticSimulationInformation
         while self._running:
             timestamp = None
             world = CarlaDataProvider.get_world()
@@ -152,9 +151,52 @@ class ScenarioManager(object):
                 snapshot = world.get_snapshot()
                 if snapshot:
                     timestamp = snapshot.timestamp
+                    if count == 0:
+
+                        # Get Weather Conditions
+                        # Conversion is from 0-100 down to the osi enum for precipitation 2-8 from none to heavy (0 being unknown  and 1  being other so we add 2*(100/7) to ensure the value is never 0 or 1)
+                        self.certiTrace.staticSimulationInformation.environmental_conditions.precipitation = int(world.get_weather().precipitation + 2*(100/7)/ (100/7)) 
+                        if (world.get_weather().fog_falloff < 3 and world.get_weather().fog_distance > 1):
+                            # Conversion is from 0-100 down to the osi enum for precipitation 1-9 from none to Dense (0 being unknown so we + 1)
+                            self.certiTrace.staticSimulationInformation.environmental_conditions.fog = int((world.get_weather().fog_density + 2*(100/8))/ (100/8))
+                        else:
+                            self.certiTrace.staticSimulationInformation.environmental_conditions.fog = 0;        
+
+                        bluePrintLibrary = world.get_blueprint_library()
+                        
+
+                        #Get Bounding Box Info
+                        
+                        for actor_snapshot in snapshot: 
+                            try:
+                                actual_actor = world.get_actor(actor_snapshot.id)      
+                                try:
+                                    isVehicle = int(actual_actor.attributes["number_of_wheels"]) > 0
+                                    print("isVehicle : {}".format(isVehicle))
+                                    if(isVehicle):
+                                        new_static_actor = self.certiTrace.staticSimulationInformation.moving_object.add()
+                                        new_static_actor.id.value = actual_actor.id
+                                        vehicle = world.get_actors().find(actor_snapshot.id)
+                                        new_static_actor.base.dimension.length = vehicle.bounding_box.extent.x * 2
+                                        new_static_actor.base.dimension.width = vehicle.bounding_box.extent.y * 2
+                                        new_static_actor.base.dimension.height = vehicle.bounding_box.extent.z * 2
+                                        if(bluePrintLibrary.find(actual_actor.type_id).has_tag("vehicle")):
+                                            new_static_actor.type = 2
+                                        elif(bluePrintLibrary.find(actual_actor.type_id).has_tag("pedestrian")):
+                                            new_static_actor.type = 3
+                                except Exception as e:
+                                    continue
+                                
+                            except Exception as e:
+                                print(e)
+                                print("Error while trying to read static actor info")
+                        
                     groundTruth = self.certiTrace.groundTruthSeries.add()
-                    for actor_snapshot in snapshot: #Get the actor and the snapshot information
+                
+                    #Get the actor and the snapshot information
+                    for actor_snapshot in snapshot: 
                         new_actor = groundTruth.moving_object.add()
+                        new_actor.id.value = actor_snapshot.id
                         new_actor.base.position.x = actor_snapshot.get_transform().location.x
                         new_actor.base.position.y = actor_snapshot.get_transform().location.y
                         new_actor.base.position.z = actor_snapshot.get_transform().location.z
@@ -167,18 +209,18 @@ class ScenarioManager(object):
                         new_actor.base.acceleration.x = actor_snapshot.get_acceleration().x
                         new_actor.base.acceleration.y = actor_snapshot.get_acceleration().y
                         new_actor.base.acceleration.z = actor_snapshot.get_acceleration().z
-                    print(groundTruth)
-                    print("-----------------------------")
+                    # print(groundTruth)
+                    # print("-----------------------------")
             if timestamp:
                 try:
                     #take screenshot at each step and store for later writing
-                    with mss.mss() as sct:
-                        screenshot = np.array(sct.grab(monitor))
-                    screenshot = cv2.resize(screenshot, (2560, 1440))
-                    screenshot = cv2.cvtColor(screenshot, cv2.COLOR_RGB2BGR)
-                    screenshot = cv2.cvtColor(screenshot, cv2.COLOR_BGR2RGB)
-                    out.write(screenshot)
-
+                    # with mss.mss() as sct:
+                    #     screenshot = np.array(sct.grab(monitor))
+                    # screenshot = cv2.resize(screenshot, (2560, 1440))
+                    # screenshot = cv2.cvtColor(screenshot, cv2.COLOR_RGB2BGR)
+                    # screenshot = cv2.cvtColor(screenshot, cv2.COLOR_BGR2RGB)
+                    # out.write(screenshot)
+                    print("Step {}".format(str(count)))
                     self._tick_scenario(timestamp)
                     count += 1
                 except:
@@ -189,27 +231,19 @@ class ScenarioManager(object):
 
         self.outputFileName += ".txt"
             
-        outputFile = open(self.outputFileName, "w")
-
-        outputFile.write("---------------------HEADER---------------------\n")
-        outputFile.write("Musicc Scenario label : {0}\n".format(self.musiccScenario['metadata']["label"]) + 
-        "Musicc Scenario Description : {0}\n".format(self.musiccScenario['metadata']["Description"]) + 
-        "Query String : {0}\n".format(self.queryString) + 
-        "Query URL : {0}\n".format(self.queryURL) + 
-        "Musicc Download ID : {0}\n".format(self.downlaodID) + 
-        "CertiCAV Commit : {0}\n".format(self.certiCAVCommit) + 
-        "Carla Version : {0}\n".format(CarlaDataProvider.get_client().get_client_version()) + 
-        "Organisation : {0}\n".format(self.organisation))
-
-        
-        timestepCounter = 0
-        for timestep in self.ground_truth_series:
-            timestepCounter += 1
-            outputFile.write("---------------------{0}---------------------\n".format(timestepCounter))
-            actorCounter = 0
-            for actor in timestep:
-                actorCounter += 1
-                outputFile.write("Actor {0} : position X: {1}, position Y: {2}, position Z: {3}\n".format(actorCounter,actor.location.x,actor.location.y,actor.location.z))
+        self.outputFileName += ".txt"
+        self.certiTrace.musiccScenarioLabel = self.musiccScenario['metadata']["Description"]
+        self.certiTrace.musiccScenarioDescription = self.musiccScenario['metadata']["Description"]
+        self.certiTrace.musiccQueryString = self.queryString
+        self.certiTrace.musiccQueryURL = self.queryURL
+        self.certiTrace.musiccDownloadID = self.downloadID
+        self.certiTrace.certicavCommit = self.certiCAVCommit
+        self.certiTrace.carlaVersion = CarlaDataProvider.get_client().get_client_version()
+        self.certiTrace.organisation = self.organisation
+    
+        outputFile = open(self.outputFileName, "wb")
+        outputFile.write(self.certiTrace.SerializeToString())
+        outputFile.close()
 
         self._watchdog.stop()
 
