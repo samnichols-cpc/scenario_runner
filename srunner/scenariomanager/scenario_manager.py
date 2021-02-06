@@ -232,14 +232,10 @@ class ScenarioManager(object):
         self.outputFileName += ".txt"
             
         self.outputFileName += ".txt"
-        self.certiTrace.musiccScenarioLabel = self.musiccScenario['metadata']["Description"]
-        self.certiTrace.musiccScenarioDescription = self.musiccScenario['metadata']["Description"]
-        self.certiTrace.musiccQueryString = self.queryString
-        self.certiTrace.musiccQueryURL = self.queryURL
-        self.certiTrace.musiccDownloadID = self.downloadID
-        self.certiTrace.certicavCommit = self.certiCAVCommit
-        self.certiTrace.carlaVersion = CarlaDataProvider.get_client().get_client_version()
-        self.certiTrace.organisation = self.organisation
+        self.certiTrace.groupingScenarioIdentifier = self.musiccScenario['metadata']["label"]
+        self.certiTrace.groupingScenarioDescription = self.musiccScenario['metadata']["Description"]
+        self.certiTrace.concreteScenarioIdentifier = "Example : BusyMotorwayMerge_01"
+        self.certiTrace.additionalRunAuditData = "Query String : " + self.queryString + "\nQuery Url : " + self.queryURL + "\nDownload ID : " + self.downloadID + "\nCertiCAV Commmit : " + self.certiCAVCommit + "\nCarla Version : " + CarlaDataProvider.get_client().get_client_version() + "\nOrganisation : " + self.organisation
     
         outputFile = open(self.outputFileName, "wb")
         outputFile.write(self.certiTrace.SerializeToString())
