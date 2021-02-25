@@ -128,6 +128,43 @@ class ScenarioManager(object):
         if self._agent is not None:
             self._agent.setup_sensors(self.ego_vehicles[0], self._debug_mode)
 
+    def function_handler(self,event):
+        try:
+            collision = self.certiTrace.groundTruthSeries[len(self.certiTrace.groundTruthSeries) - 1].collisions.add()
+            collisionActor = collision.actors.add()
+            otherCollisionActor = collision.actors.add()
+
+            collisionActor.id.value = event.actor.id
+            collisionActor.base.position.x = event.actor.get_transform().location.x
+            collisionActor.base.position.y = event.actor.get_transform().location.y
+            collisionActor.base.position.z = event.actor.get_transform().location.z
+            collisionActor.base.orientation.roll = event.actor.get_transform().rotation.roll
+            collisionActor.base.orientation.pitch = event.actor.get_transform().rotation.pitch
+            collisionActor.base.orientation.yaw = event.actor.get_transform().rotation.yaw
+            collisionActor.base.velocity.x = event.actor.get_velocity().x
+            collisionActor.base.velocity.y = event.actor.get_velocity().y
+            collisionActor.base.velocity.z = event.actor.get_velocity().z
+            collisionActor.base.acceleration.x = event.actor.get_acceleration().x
+            collisionActor.base.acceleration.y = event.actor.get_acceleration().y
+            collisionActor.base.acceleration.z = event.actor.get_acceleration().z
+
+            otherCollisionActor.id.value = event.other_actor.id
+            otherCollisionActor.base.position.x = event.other_actor.get_transform().location.x
+            otherCollisionActor.base.position.y = event.other_actor.get_transform().location.y
+            otherCollisionActor.base.position.z = event.other_actor.get_transform().location.z
+            otherCollisionActor.base.orientation.roll = event.other_actor.get_transform().rotation.roll
+            otherCollisionActor.base.orientation.pitch = event.other_actor.get_transform().rotation.pitch
+            otherCollisionActor.base.orientation.yaw = event.other_actor.get_transform().rotation.yaw
+            otherCollisionActor.base.velocity.x = event.other_actor.get_velocity().x
+            otherCollisionActor.base.velocity.y = event.other_actor.get_velocity().y
+            otherCollisionActor.base.velocity.z = event.other_actor.get_velocity().z
+            otherCollisionActor.base.acceleration.x = event.other_actor.get_acceleration().x
+            otherCollisionActor.base.acceleration.y = event.other_actor.get_acceleration().y
+            otherCollisionActor.base.acceleration.z = event.other_actor.get_acceleration().z
+        except Exception as e:
+            print(e)
+            
+
     def run_scenario(self):
         """
         Trigger the start of the scenario and wait for it to finish/fail
@@ -147,6 +184,8 @@ class ScenarioManager(object):
         while self._running:
             timestamp = None
             world = CarlaDataProvider.get_world()
+
+            
             if world:
                 snapshot = world.get_snapshot()
                 if snapshot:
@@ -161,19 +200,21 @@ class ScenarioManager(object):
                             self.certiTrace.staticSimulationInformation.environmental_conditions.fog = int((world.get_weather().fog_density + 2*(100/8))/ (100/8))
                         else:
                             self.certiTrace.staticSimulationInformation.environmental_conditions.fog = 0;        
-
-                        bluePrintLibrary = world.get_blueprint_library()
                         
+                        bluePrintLibrary = world.get_blueprint_library()
 
                         #Get Bounding Box Info
-                        
                         for actor_snapshot in snapshot: 
                             try:
                                 actual_actor = world.get_actor(actor_snapshot.id)      
                                 try:
                                     isVehicle = int(actual_actor.attributes["number_of_wheels"]) > 0
-                                    print("isVehicle : {}".format(isVehicle))
                                     if(isVehicle):
+                                        if actual_actor.attributes['role_name'].lower() == "ego" or actual_actor.attributes['role_name'].lower() == "hero":
+                                            print("Ego found")
+                                            self.certiTrace.staticSimulationInformation.host_vehicle_id.value = actor_snapshot.id
+                                            collision_sensor = world.spawn_actor(bluePrintLibrary.find('sensor.other.collision'), actor_snapshot.get_transform(), attach_to=actual_actor)
+                                            collision_sensor.listen(lambda event: self.function_handler(event))
                                         new_static_actor = self.certiTrace.staticSimulationInformation.moving_object.add()
                                         new_static_actor.id.value = actual_actor.id
                                         vehicle = world.get_actors().find(actor_snapshot.id)
@@ -185,6 +226,7 @@ class ScenarioManager(object):
                                         elif(bluePrintLibrary.find(actual_actor.type_id).has_tag("pedestrian")):
                                             new_static_actor.type = 3
                                 except Exception as e:
+                                    print(e)
                                     continue
                                 
                             except Exception as e:
@@ -220,13 +262,13 @@ class ScenarioManager(object):
                     # screenshot = cv2.cvtColor(screenshot, cv2.COLOR_RGB2BGR)
                     # screenshot = cv2.cvtColor(screenshot, cv2.COLOR_BGR2RGB)
                     # out.write(screenshot)
-                    print("Step {}".format(str(count)))
+                    print("Step {}".format(str(count)),end="\r")
                     self._tick_scenario(timestamp)
                     count += 1
                 except:
                     print("Warning : Failed to tick scenario")
                     break
-        
+        print("")
         out.release()
             
         self.outputFileName += ".txt"
