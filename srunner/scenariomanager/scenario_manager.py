@@ -49,7 +49,7 @@ class ScenarioManager(object):
     5. If needed, cleanup with manager.stop_scenario()
     """
 
-    def __init__(self, musiccScenario, queryString, queryURL, downloadID, certiCAVCommit, organisation, outputFileName, debug_mode=False, sync_mode=False, timeout=2.0):
+    def __init__(self, musiccScenario, queryString, queryURL, concreteScenarioIdentifier, certiCAVCommit, organisation, outputFileName ,debug_mode=False, sync_mode=False, timeout=2.0):
         """
         Setups up the parameters, which will be filled at load_scenario()
 
@@ -77,7 +77,7 @@ class ScenarioManager(object):
         self.musiccScenario = musiccScenario
         self.queryString = queryString
         self.queryURL = queryURL
-        self.downloadID = downloadID
+        self.concreteScenarioIdentifier = concreteScenarioIdentifier
         self.certiCAVCommit = certiCAVCommit
         self.organisation = organisation
         self.outputFileName = outputFileName
@@ -272,10 +272,10 @@ class ScenarioManager(object):
         out.release()
             
         self.outputFileName += ".txt"
-        self.certiTrace.groupingScenarioIdentifier = self.musiccScenario['metadata']["label"]
+        self.certiTrace.groupingScenarioIdentifier = self.musiccScenario['metadata']["OpenScenario_ID"]
         self.certiTrace.groupingScenarioDescription = self.musiccScenario['metadata']["Description"]
-        self.certiTrace.concreteScenarioIdentifier = "Example : BusyMotorwayMerge_01"
-        self.certiTrace.additionalRunAuditData = "Query String : " + self.queryString + "\nQuery Url : " + self.queryURL + "\nDownload ID : " + str(self.downloadID) + "\nCertiCAV Commmit : " + str(self.certiCAVCommit) + "\nCarla Version : " + str(CarlaDataProvider.get_client().get_client_version()) + "\nOrganisation : " + self.organisation
+        self.certiTrace.concreteScenarioIdentifier = self.concreteScenarioIdentifier
+        self.certiTrace.additionalRunAuditData = "{\"Query String\" : " + self.queryString + ",\"Query Url\" : " + self.queryURL + ",\"CertiCAV Commmit\" : " + str(self.certiCAVCommit) + ",\"Carla Version\" : " + str(CarlaDataProvider.get_client().get_client_version()) + ",\"Organisation\" : " + self.organisation + ",\"Musicc ID\"" + self.musiccScenario["id"] + "}"
     
         outputFile = open(self.outputFileName, "wb")
         outputFile.write(self.certiTrace.SerializeToString())
