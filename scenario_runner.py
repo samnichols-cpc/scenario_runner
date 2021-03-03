@@ -72,7 +72,7 @@ class ScenarioRunner(object):
     agent_instance = None
     module_agent = None
 
-    def __init__(self, args, musiccScenario, queryString, queryURL, downloadID, certiCAVCommit, organisation, outputFileName):
+    def __init__(self, args, musiccScenario, queryString, queryURL, concreteScenarioIdentifier, certiCAVCommit, organisation, outputFileName):
         """
         Setup CARLA client and world
         Setup ScenarioManager
@@ -81,7 +81,7 @@ class ScenarioRunner(object):
         self.musiccScenario = musiccScenario
         self.queryString = queryString
         self.queryURL = queryURL
-        self.downloadID = downloadID
+        self.concreteScenarioIdentifier = concreteScenarioIdentifier
         self.certiCAVCommit = certiCAVCommit
         self.organisation = organisation
         self.outputFileName = outputFileName
@@ -109,7 +109,7 @@ class ScenarioRunner(object):
             self.module_agent = importlib.import_module(module_name)
 
         # Create the ScenarioManager
-        self.manager = ScenarioManager(self.musiccScenario, self.queryString, self.queryURL, self.downloadID, self.certiCAVCommit, self.organisation, self.outputFileName, self._args.debug, self._args.sync, self._args.timeout)
+        self.manager = ScenarioManager(self.musiccScenario, self.queryString, self.queryURL, self.concreteScenarioIdentifier, self.certiCAVCommit, self.organisation, self.outputFileName, self._args.debug, self._args.sync, self._args.timeout)
 
         # Create signal handler for SIGINT
         self._shutdown_requested = False
@@ -508,7 +508,7 @@ class ScenarioRunner(object):
         return result
 
 
-def main(strArguments, musiccScenario, queryString, queryURL, downloadID, certiCAVCommit, organisation, outputFileName):
+def main(strArguments, musiccScenario, queryString, queryURL, concreteScenarioIdentifier, certiCAVCommit, organisation, outputFileName):
     """
     main function
     """
@@ -593,7 +593,7 @@ def main(strArguments, musiccScenario, queryString, queryURL, downloadID, certiC
     scenario_runner = None
     result = True
     try:
-        scenario_runner = ScenarioRunner(arguments, musiccScenario, queryString, queryURL, downloadID, certiCAVCommit, organisation, outputFileName)
+        scenario_runner = ScenarioRunner(arguments, musiccScenario, queryString, queryURL, concreteScenarioIdentifier, certiCAVCommit, organisation, outputFileName)
         result = scenario_runner.run()
 
     finally:
