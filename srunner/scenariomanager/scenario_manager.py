@@ -24,12 +24,23 @@ from datetime import datetime
 import mss
 import cv2
 import numpy as np
+import json
 
 sys.path.append(str(pathlib.Path(__file__).parent.parent.parent.parent.absolute()) + "/pyproto")
 
 from pyproto import certitrace_pb2
 from pyproto import osi_groundtruth_pb2
 
+
+class AdditionalRunAuditData:
+    def __init__(self,queryString, queryURL,certiCAVCommit, organisation,scenario):
+        self.QueryString = queryString
+        self.QueryURL = queryURL
+        self.CertiCAVCommit = str(certiCAVCommit)
+        self.CarlaCommit = str(CarlaDataProvider.get_client().get_client_version())
+        self.Organisation = organisation
+        self.MusiccID = scenario['id']
+        pass
 
 class ScenarioManager(object):
 
@@ -266,16 +277,19 @@ class ScenarioManager(object):
                     self._tick_scenario(timestamp)
                     count += 1
                 except:
-                    print("Warning : Failed to tick scenario")
+                    print("Warning : Failed to tick scenario") 
                     break
         print("")
         out.release()
+        collision_sensor.destroy()
             
         self.outputFileName += ".txt"
         self.certiTrace.groupingScenarioIdentifier = self.musiccScenario['metadata']["OpenScenario_ID"]
         self.certiTrace.groupingScenarioDescription = self.musiccScenario['metadata']["Description"]
         self.certiTrace.concreteScenarioIdentifier = self.concreteScenarioIdentifier
-        self.certiTrace.additionalRunAuditData = "{\"Query String\" : " + self.queryString + ",\"Query Url\" : " + self.queryURL + ",\"CertiCAV Commmit\" : " + str(self.certiCAVCommit) + ",\"Carla Version\" : " + str(CarlaDataProvider.get_client().get_client_version()) + ",\"Organisation\" : " + self.organisation + ",\"Musicc ID\"" + self.musiccScenario["id"] + "}"
+
+        additionalRunAuditDataObject = AdditionalRunAuditData(self.queryString,self.queryURL,self.certiCAVCommit,self.organisation,self.musiccScenario)
+        self.certiTrace.additionalRunAuditData = json.dumps(additionalRunAuditDataObject.__dict__)
     
         outputFile = open(self.outputFileName, "wb")
         outputFile.write(self.certiTrace.SerializeToString())
