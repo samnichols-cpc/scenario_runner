@@ -33,11 +33,11 @@ from pyproto import osi_groundtruth_pb2
 
 
 class AdditionalRunAuditData:
-    def __init__(self,queryString, queryURL,certiCAVCommit, organisation,scenario):
+    def __init__(self,queryString, queryURL,certiCAVCommit, carlaCommit, organisation,scenario):
         self.QueryString = queryString
         self.QueryURL = queryURL
         self.CertiCAVCommit = str(certiCAVCommit)
-        self.CarlaCommit = str(CarlaDataProvider.get_client().get_client_version())
+        self.CarlaCommit = carlaCommit
         self.Organisation = organisation
         self.MusiccID = scenario['id']
         pass
@@ -92,6 +92,7 @@ class ScenarioManager(object):
         self.certiCAVCommit = certiCAVCommit
         self.organisation = organisation
         self.outputFileName = outputFileName
+        self.carlaCommit = None
 
     def _reset(self):
         """
@@ -191,7 +192,9 @@ class ScenarioManager(object):
                             (2560, 1440))
         monitor = {"top": 0, "left": 0, "width": 2560, "height": 1440}
         count = 0
-
+        
+        self.carlaCommit = str(CarlaDataProvider.get_client().get_client_version())
+        
         while self._running:
             timestamp = None
             world = CarlaDataProvider.get_world()
@@ -288,7 +291,7 @@ class ScenarioManager(object):
         self.certiTrace.groupingScenarioDescription = self.musiccScenario['metadata']["Description"]
         self.certiTrace.concreteScenarioIdentifier = self.concreteScenarioIdentifier
 
-        additionalRunAuditDataObject = AdditionalRunAuditData(self.queryString,self.queryURL,self.certiCAVCommit,self.organisation,self.musiccScenario)
+        additionalRunAuditDataObject = AdditionalRunAuditData(self.queryString,self.queryURL,self.certiCAVCommit,self.carlaCommit,self.organisation,self.musiccScenario)
         self.certiTrace.additionalRunAuditData = json.dumps(additionalRunAuditDataObject.__dict__)
     
         outputFile = open(self.outputFileName, "wb")
