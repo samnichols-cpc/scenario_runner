@@ -25,6 +25,7 @@ import mss
 import cv2
 import numpy as np
 import json
+import traceback
 
 sys.path.append(str(pathlib.Path(__file__).parent.parent.parent.parent.absolute()) + "/pyproto")
 
@@ -60,7 +61,7 @@ class ScenarioManager(object):
     5. If needed, cleanup with manager.stop_scenario()
     """
 
-    def __init__(self, musiccScenario, queryString, queryURL, concreteScenarioIdentifier, certiCAVCommit, organisation, outputFileName ,debug_mode=False, sync_mode=False, timeout=2.0):
+    def __init__(self, musiccScenario, queryString, queryURL, concreteScenarioIdentifier, certiCAVCommit, organisation, outputFileName, debug_mode=False, sync_mode=False, timeout=2.0):
         """
         Setups up the parameters, which will be filled at load_scenario()
 
@@ -148,30 +149,30 @@ class ScenarioManager(object):
 
             collisionActor.id.value = event.actor.id
             collisionActor.base.position.x = event.actor.get_transform().location.x
-            collisionActor.base.position.y = event.actor.get_transform().location.y
+            collisionActor.base.position.y = -event.actor.get_transform().location.y
             collisionActor.base.position.z = event.actor.get_transform().location.z
             collisionActor.base.orientation.roll = event.actor.get_transform().rotation.roll
             collisionActor.base.orientation.pitch = event.actor.get_transform().rotation.pitch
             collisionActor.base.orientation.yaw = event.actor.get_transform().rotation.yaw
             collisionActor.base.velocity.x = event.actor.get_velocity().x
-            collisionActor.base.velocity.y = event.actor.get_velocity().y
+            collisionActor.base.velocity.y = -event.actor.get_velocity().y
             collisionActor.base.velocity.z = event.actor.get_velocity().z
             collisionActor.base.acceleration.x = event.actor.get_acceleration().x
-            collisionActor.base.acceleration.y = event.actor.get_acceleration().y
+            collisionActor.base.acceleration.y = -event.actor.get_acceleration().y
             collisionActor.base.acceleration.z = event.actor.get_acceleration().z
 
             otherCollisionActor.id.value = event.other_actor.id
             otherCollisionActor.base.position.x = event.other_actor.get_transform().location.x
-            otherCollisionActor.base.position.y = event.other_actor.get_transform().location.y
+            otherCollisionActor.base.position.y = -event.other_actor.get_transform().location.y
             otherCollisionActor.base.position.z = event.other_actor.get_transform().location.z
             otherCollisionActor.base.orientation.roll = event.other_actor.get_transform().rotation.roll
             otherCollisionActor.base.orientation.pitch = event.other_actor.get_transform().rotation.pitch
             otherCollisionActor.base.orientation.yaw = event.other_actor.get_transform().rotation.yaw
             otherCollisionActor.base.velocity.x = event.other_actor.get_velocity().x
-            otherCollisionActor.base.velocity.y = event.other_actor.get_velocity().y
+            otherCollisionActor.base.velocity.y = -event.other_actor.get_velocity().y
             otherCollisionActor.base.velocity.z = event.other_actor.get_velocity().z
             otherCollisionActor.base.acceleration.x = event.other_actor.get_acceleration().x
-            otherCollisionActor.base.acceleration.y = event.other_actor.get_acceleration().y
+            otherCollisionActor.base.acceleration.y = -event.other_actor.get_acceleration().y
             otherCollisionActor.base.acceleration.z = event.other_actor.get_acceleration().z
         except Exception as e:
             print(e)
@@ -192,9 +193,8 @@ class ScenarioManager(object):
                             (2560, 1440))
         monitor = {"top": 0, "left": 0, "width": 2560, "height": 1440}
         count = 0
-        
         self.carlaCommit = str(CarlaDataProvider.get_client().get_client_version())
-        
+
         while self._running:
             timestamp = None
             world = CarlaDataProvider.get_world()
@@ -254,33 +254,36 @@ class ScenarioManager(object):
                         new_actor = groundTruth.moving_object.add()
                         new_actor.id.value = actor_snapshot.id
                         new_actor.base.position.x = actor_snapshot.get_transform().location.x
-                        new_actor.base.position.y = actor_snapshot.get_transform().location.y
+                        new_actor.base.position.y = -actor_snapshot.get_transform().location.y
                         new_actor.base.position.z = actor_snapshot.get_transform().location.z
                         new_actor.base.orientation.roll = actor_snapshot.get_transform().rotation.roll
                         new_actor.base.orientation.pitch = actor_snapshot.get_transform().rotation.pitch
                         new_actor.base.orientation.yaw = actor_snapshot.get_transform().rotation.yaw
                         new_actor.base.velocity.x = actor_snapshot.get_velocity().x
-                        new_actor.base.velocity.y = actor_snapshot.get_velocity().y
+                        new_actor.base.velocity.y = -actor_snapshot.get_velocity().y
                         new_actor.base.velocity.z = actor_snapshot.get_velocity().z
                         new_actor.base.acceleration.x = actor_snapshot.get_acceleration().x
-                        new_actor.base.acceleration.y = actor_snapshot.get_acceleration().y
+                        new_actor.base.acceleration.y = -actor_snapshot.get_acceleration().y
                         new_actor.base.acceleration.z = actor_snapshot.get_acceleration().z
                     # print(groundTruth)
                     # print("-----------------------------")
             if timestamp:
                 try:
                     #take screenshot at each step and store for later writing
-                    # with mss.mss() as sct:
-                    #     screenshot = np.array(sct.grab(monitor))
-                    # screenshot = cv2.resize(screenshot, (2560, 1440))
-                    # screenshot = cv2.cvtColor(screenshot, cv2.COLOR_RGB2BGR)
-                    # screenshot = cv2.cvtColor(screenshot, cv2.COLOR_BGR2RGB)
-                    # out.write(screenshot)
+                    with mss.mss() as sct:
+                        screenshot = np.array(sct.grab(monitor))
+                    screenshot = cv2.resize(screenshot, (1920, 1080))
+                    screenshot = cv2.cvtColor(screenshot, cv2.COLOR_RGB2BGR)
+                    screenshot = cv2.cvtColor(screenshot, cv2.COLOR_BGR2RGB)
+                    out.write(screenshot)
                     print("Step {}".format(str(count)),end="\r")
                     self._tick_scenario(timestamp)
                     count += 1
-                except:
-                    print("Warning : Failed to tick scenario") 
+                    if count == 1000:
+                        self.stop_scenario()
+                except Exception as e:
+                    print("Warning : Failed to tick scenario")
+                    traceback.print_exc()
                     break
         print("")
         out.release()

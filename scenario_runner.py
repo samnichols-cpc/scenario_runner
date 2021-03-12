@@ -40,6 +40,10 @@ from srunner.scenarios.route_scenario import RouteScenario
 from srunner.tools.scenario_parser import ScenarioConfigurationParser
 from srunner.tools.route_parser import RouteParser
 
+import manual_control
+
+from threading import Thread
+
 # Version of scenario_runner
 VERSION = '0.9.10'
 
@@ -72,7 +76,7 @@ class ScenarioRunner(object):
     agent_instance = None
     module_agent = None
 
-    def __init__(self, args, musiccScenario, queryString, queryURL, concreteScenarioIdentifier, certiCAVCommit, organisation, outputFileName):
+    def __init__(self, args, musiccScenario, queryString, queryURL, concreteScenarioIdentifier, certiCAVCommit, organisation, outputFileName, humanTrial):
         """
         Setup CARLA client and world
         Setup ScenarioManager
@@ -85,6 +89,7 @@ class ScenarioRunner(object):
         self.certiCAVCommit = certiCAVCommit
         self.organisation = organisation
         self.outputFileName = outputFileName
+        self.humanTrial = humanTrial
 
         if args.timeout:
             self.client_timeout = float(args.timeout)
@@ -409,8 +414,15 @@ class ScenarioRunner(object):
 
             # Load scenario and run it
             self.manager.load_scenario(scenario, self.agent_instance)
+            if self.humanTrial:
+                manualControlThread = Thread(target = manual_control.main )
+                manualControlThread.start()
+                time.sleep(2)
             self.manager.run_scenario()
 
+            if self.humanTrial and manualControlThread.isAlive:
+                print("Please quit out of your manual controller")
+                manualControlThread.join()
             # Provide outputs if required
             self._analyze_scenario(config)
 
@@ -508,7 +520,7 @@ class ScenarioRunner(object):
         return result
 
 
-def main(strArguments, musiccScenario, queryString, queryURL, concreteScenarioIdentifier, certiCAVCommit, organisation, outputFileName):
+def main(strArguments, musiccScenario, queryString, queryURL, concreteScenarioIdentifier, certiCAVCommit, organisation, outputFileName, humanTrial = False):
     """
     main function
     """
@@ -593,7 +605,7 @@ def main(strArguments, musiccScenario, queryString, queryURL, concreteScenarioId
     scenario_runner = None
     result = True
     try:
-        scenario_runner = ScenarioRunner(arguments, musiccScenario, queryString, queryURL, concreteScenarioIdentifier, certiCAVCommit, organisation, outputFileName)
+        scenario_runner = ScenarioRunner(arguments, musiccScenario, queryString, queryURL, concreteScenarioIdentifier, certiCAVCommit, organisation, outputFileName, humanTrial)
         result = scenario_runner.run()
 
     finally:
