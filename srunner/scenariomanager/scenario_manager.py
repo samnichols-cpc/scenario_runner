@@ -272,7 +272,7 @@ class ScenarioManager(object):
                     #take screenshot at each step and store for later writing
                     with mss.mss() as sct:
                         screenshot = np.array(sct.grab(monitor))
-                    screenshot = cv2.resize(screenshot, (1920, 1080))
+                    screenshot = cv2.resize(screenshot, (2560, 1440))
                     screenshot = cv2.cvtColor(screenshot, cv2.COLOR_RGB2BGR)
                     screenshot = cv2.cvtColor(screenshot, cv2.COLOR_BGR2RGB)
                     out.write(screenshot)
